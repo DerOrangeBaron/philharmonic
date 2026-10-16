@@ -19,6 +19,13 @@ test("GET / responde el nombre", async () => {
   assert.equal(await r.text(), "philharmonic\n");
 });
 
+test("GET /salud responde ok en JSON", async () => {
+  const r = await pedir("/salud");
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.get("content-type"), "application/json");
+  assert.deepEqual(await r.json(), { ok: true });
+});
+
 test("una ruta desconocida da 404", async () => {
   assert.equal((await pedir("/nada")).status, 404);
 });
