@@ -7,6 +7,11 @@ export function manejar(req, res) {
     res.end("philharmonic\n");
     return;
   }
+  if (req.method === "GET" && req.url === "/salud") {
+    res.writeHead(200, { "content-type": "application/json" });
+    res.end(JSON.stringify({ ok: true }));
+    return;
+  }
   res.writeHead(404, { "content-type": "application/json" });
   res.end(JSON.stringify({ error: "ruta inexistente" }));
 }
