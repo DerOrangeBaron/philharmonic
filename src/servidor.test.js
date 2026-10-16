@@ -1,38 +1,31 @@
 import assert from "node:assert/strict";
+import { createServer } from "node:http";
 import { test } from "node:test";
 import { manejar } from "./servidor.js";
 
-/** Llama a `manejar` con un pedido y una respuesta falsos, sin abrir un puerto. */
-function pedir(ruta, method = "GET") {
-  const r = { status: undefined, headers: {}, cuerpo: "" };
-  manejar(
-    { method, url: ruta },
-    {
-      writeHead(status, headers = {}) {
-        r.status = status;
-        r.headers = headers;
-      },
-      end(cuerpo = "") {
-        r.cuerpo = String(cuerpo);
-      },
-    },
-  );
-  return r;
+async function pedir(ruta) {
+  const servidor = createServer(manejar);
+  await new Promise((r) => servidor.listen(0, "127.0.0.1", r));
+  try {
+    return await fetch(`http://127.0.0.1:${servidor.address().port}${ruta}`);
+  } finally {
+    servidor.close();
+  }
 }
 
-test("GET / responde el nombre", () => {
-  const r = pedir("/");
+test("GET / responde el nombre", async () => {
+  const r = await pedir("/");
   assert.equal(r.status, 200);
-  assert.equal(r.cuerpo, "philharmonic\n");
+  assert.equal(await r.text(), "philharmonic\n");
 });
 
-test("GET /salud responde ok en JSON", () => {
-  const r = pedir("/salud");
+test("GET /salud responde ok en JSON", async () => {
+  const r = await pedir("/salud");
   assert.equal(r.status, 200);
-  assert.equal(r.headers["content-type"], "application/json");
-  assert.deepEqual(JSON.parse(r.cuerpo), { ok: true });
+  assert.equal(r.headers.get("content-type"), "application/json");
+  assert.deepEqual(await r.json(), { ok: true });
 });
 
-test("una ruta desconocida da 404", () => {
-  assert.equal(pedir("/nada").status, 404);
+test("una ruta desconocida da 404", async () => {
+  assert.equal((await pedir("/nada")).status, 404);
 });
